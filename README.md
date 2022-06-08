@@ -1,7 +1,7 @@
 # BiTraP: Bi-directional Pedestrian Trajectory Prediction with Multi-modal Goal Estimation
 Yu Yao, Ella Atkins, Matthew Johnson-Roberson, Ram Vasudevan and Xiaoxiao Du
 
-This repo contains the code for our paper:[BiTraP: Bi-directional Pedestrian Trajectory Prediction with Multi-modal Goal Estimation](https://arxiv.org/abs/2007.14558).
+repo contains the code for our paper:[BiTraP: Bi-directional Pedestrian Trajectory Prediction with Multi-modal Goal Estimation](https://arxiv.org/abs/2007.14558).
 
 Our BiTraP-NP network architecture:
 
