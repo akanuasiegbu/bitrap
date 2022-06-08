@@ -54,9 +54,15 @@ def do_train(cfg, epoch, model, optimizer, dataloader, device, logger=None, lr_s
                        model.param_scheduler.kld_weight * loss_dict['loss_kld'] - \
                        1. * loss_dict['mutual_info_p']
             else:
-                loss = loss_dict['loss_goal'] + \
-                       loss_dict['loss_traj'] + \
-                       model.param_scheduler.kld_weight * loss_dict['loss_kld']
+                if cfg.MODEL.USE_HUMAN_CONSTRAINT:
+                    loss = loss_dict['loss_goal'] + \
+                        loss_dict['loss_traj'] + \
+                        model.param_scheduler.kld_weight * loss_dict['loss_kld'] +\
+                        loss_dict['loss_joint'] + loss_dict['loss_bone'] + loss_dict['loss_endpoint']
+                else:
+                    loss = loss_dict['loss_goal'] + \
+                        loss_dict['loss_traj'] + \
+                        model.param_scheduler.kld_weight * loss_dict['loss_kld']
             model.param_scheduler.step()
             loss_dict = {k:v.item() for k, v in loss_dict.items()}
             loss_dict['lr'] = optimizer.param_groups[0]['lr']
@@ -65,7 +71,8 @@ def do_train(cfg, epoch, model, optimizer, dataloader, device, logger=None, lr_s
             loss.backward()
             
             # loss_dict['grad_norm'] = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            torch.nn.utils.clip_grad_value_(model.parameters(), 1.0)
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, 2.0) 
+            torch.nn.utils.clip_grad_value_(model.parameters(), 1.0) 
             optimizer.step()
 
             if cfg.SOLVER.scheduler == 'exp':
@@ -84,6 +91,9 @@ def do_val(cfg, epoch, model, dataloader, device, logger=None):
     loss_goal_val = 0.0
     loss_traj_val = 0.0
     loss_KLD_val = 0.0
+    loss_joint_val = 0.0
+    loss_bone_val = 0.0
+    loss_endpoint_val =0.0
     with torch.set_grad_enabled(False):
         for iters, batch in enumerate(tqdm(dataloader), start=1):
             X_global = batch['input_x'].to(device)
@@ -107,26 +117,58 @@ def do_val(cfg, epoch, model, dataloader, device, logger=None):
                                                             first_history_indices=first_history_indices)
 
             # compute loss
-            loss = loss_dict['loss_goal'] + loss_dict['loss_traj'] + loss_dict['loss_kld']
+            if cfg.MODEL.USE_HUMAN_CONSTRAINT:
+                loss = loss_dict['loss_goal'] + loss_dict['loss_traj'] + loss_dict['loss_kld'] + loss_dict['loss_joint'] + loss_dict['loss_bone'] + loss_dict['loss_endpoint']
+            else:
+                loss = loss_dict['loss_goal'] + loss_dict['loss_traj'] + loss_dict['loss_kld']
             loss_goal_val += loss_dict['loss_goal'].item()
             loss_traj_val += loss_dict['loss_traj'].item()
             loss_KLD_val += loss_dict['loss_kld'].item()
+            if cfg.MODEL.USE_HUMAN_CONSTRAINT:
+                loss_joint_val = loss_dict['loss_joint'].item()
+                loss_bone_val = loss_dict['loss_bone'].item()
+                loss_endpoint_val = loss_dict['loss_endpoint'].item()
+
     loss_goal_val /= (iters + 1)
     loss_traj_val /= (iters + 1)
     loss_KLD_val /= (iters + 1)
-    loss_val = loss_goal_val + loss_traj_val + loss_KLD_val
-    
-    info = "loss_val:{:.4f}, \
+
+    if cfg.MODEL.USE_HUMAN_CONSTRAINT:
+        loss_joint_val /= (iters + 1)
+        loss_bone_val /= (iters + 1)
+        loss_endpoint_val /= (iters + 1)
+        loss_val = loss_goal_val + loss_traj_val + loss_KLD_val + loss_joint_val + loss_bone_val + loss_endpoint_val
+
+        info = "loss_val:{:.4f}, \
             loss_goal_val:{:.4f}, \
             loss_traj_val:{:.4f}, \
-            loss_kld_val:{:.4f}".format(loss_val, loss_goal_val, loss_traj_val, loss_KLD_val)
+            loss_kld_val:{:.4f}, \
+            loss_joint_val:{:.4f}, \
+            loss_bone_val:{:.4f}, \
+            loss_endpoint_val:{:.4f}".format(loss_val, loss_goal_val, loss_traj_val, loss_KLD_val, loss_joint_val, loss_bone_val, loss_endpoint_val)
+    else:
+        loss_val = loss_goal_val + loss_traj_val + loss_KLD_val
+    
+        info = "loss_val:{:.4f}, \
+                loss_goal_val:{:.4f}, \
+                loss_traj_val:{:.4f}, \
+                loss_kld_val:{:.4f}".format(loss_val, loss_goal_val, loss_traj_val, loss_KLD_val)
         
     if hasattr(logger, 'log_values'):
         logger.info(info)
-        logger.log_values({'loss_val':loss_val, 
-                           'loss_goal_val':loss_goal_val,
-                           'loss_traj_val':loss_traj_val, 
-                           'loss_kld_val':loss_KLD_val})#, step=epoch)
+        if cfg.MODEL.USE_HUMAN_CONSTRAINT:
+            logger.log_values({'loss_val':loss_val, 
+                            'loss_goal_val':loss_goal_val,
+                            'loss_traj_val':loss_traj_val, 
+                            'loss_kld_val':loss_KLD_val,
+                            'loss_joint_val':loss_joint_val,
+                            'loss_bone_val':loss_bone_val,
+                            'loss_endpoint_val':loss_endpoint_val})#, step=epoch)
+        else:
+            logger.log_values({'loss_val':loss_val, 
+                            'loss_goal_val':loss_goal_val,
+                            'loss_traj_val':loss_traj_val, 
+                            'loss_kld_val':loss_KLD_val})#, step=epoch)
     else:
         print(info)
     return loss_val
@@ -145,7 +187,7 @@ def inference(cfg, epoch, model, dataloader, device, logger=None, eval_kde_nll=F
     #     viz = Visualizer(mode='plot')
     # else:
     #     viz = Visualizer(mode='image')
-    if custom:
+    if custom=='pose' or custom=='bbox':
         all_video_files = []
         all_abnormal_ped_pred = []
         all_abnormal_ped_input = []
@@ -154,6 +196,9 @@ def inference(cfg, epoch, model, dataloader, device, logger=None, eval_kde_nll=F
         all_id_y = []
         all_frame_x = []
         all_frame_y =[]
+
+    if custom =='pose':
+        all_kp_confidence_pred = []
 
     with torch.set_grad_enabled(False):
         for iters, batch in enumerate(tqdm(dataloader), start=1):
@@ -187,10 +232,10 @@ def inference(cfg, epoch, model, dataloader, device, logger=None, eval_kde_nll=F
             all_pred_trajs.append(pred_traj)
             all_gt_goals.append(y_global[:, -1])
             all_gt_trajs.append(y_global)
-            if not custom:
+            if custom == 'regular':
                 all_img_paths.extend(img_path) # added change
                 all_timesteps.append(batch['timestep'].numpy())
-            if custom:
+            if custom == 'bbox' or custom == 'pose':
                 all_video_files.append(batch['video_file'].numpy())
                 all_abnormal_ped_pred.append(batch['abnormal_ped_pred'].numpy())
                 all_abnormal_ped_input.append(batch['abnormal_ped_input'].numpy())
@@ -199,6 +244,15 @@ def inference(cfg, epoch, model, dataloader, device, logger=None, eval_kde_nll=F
                 all_id_y.append(batch['id_y'].numpy())
                 all_frame_x.append(batch['frame_x'].numpy())
                 all_frame_y.append(batch['frame_y'].numpy())
+            
+            if custom == 'pose':
+                all_kp_confidence_pred.append(batch['kp_confidence_pred'].numpy())
+            # elif custom =='pose':
+            #     all_video_files.append(batch['vid_name'].numpy())
+            #     all_id_x.append(batch['id_x'].numpy())
+            #     all_id_y.append(batch['id_y'].numpy())
+            #     all_frame_x.append(batch['frame_x'].numpy())
+            #     all_frame_y.append(batch['frame_y'].numpy())
 
             if dist_traj is not None:
                 all_distributions.append(dist_traj)
@@ -215,9 +269,9 @@ def inference(cfg, epoch, model, dataloader, device, logger=None, eval_kde_nll=F
         all_pred_trajs = np.concatenate(all_pred_trajs, axis=0)
         all_gt_goals = np.concatenate(all_gt_goals, axis=0)
         all_gt_trajs = np.concatenate(all_gt_trajs, axis=0)
-        if not custom:
+        if custom=='regular':
             all_timesteps = np.concatenate(all_timesteps, axis=0)
-        if custom:
+        if custom=='bbox' or custom == 'pose':
             all_video_files = np.concatenate(all_video_files, axis=0)
             all_abnormal_ped_input = np.concatenate(all_abnormal_ped_input, axis=0)
             all_abnormal_ped_pred = np.concatenate(all_abnormal_ped_pred, axis=0)
@@ -226,6 +280,16 @@ def inference(cfg, epoch, model, dataloader, device, logger=None, eval_kde_nll=F
             all_id_y = np.concatenate(all_id_y, axis=0)
             all_frame_x = np.concatenate(all_frame_x, axis=0)
             all_frame_y = np.concatenate(all_frame_y, axis=0)
+        if custom =='pose':
+            all_kp_confidence_pred = np.concatenate(all_kp_confidence_pred, axis=0)
+        
+        # elif custom=='pose':
+        #     all_video_files = np.concatenate(all_video_files, axis=0)
+        #     all_id_x = np.concatenate(all_id_x, axis=0)
+        #     all_id_y = np.concatenate(all_id_y, axis=0)
+        #     all_frame_x = np.concatenate(all_frame_x, axis=0)
+        #     all_frame_y = np.concatenate(all_frame_y, axis=0)
+        
         
 
 
@@ -253,11 +317,24 @@ def inference(cfg, epoch, model, dataloader, device, logger=None, eval_kde_nll=F
             # save inputs, redictions and targets for test mode
             # outputs = {'img_path': all_img_paths, 'X_global': all_X_globals, 'timestep': all_timesteps,  
             #            'pred_trajs': all_pred_trajs, 'gt_trajs':all_gt_trajs,'distributions':distribution} #added change
-            if custom:
+            if custom =='box':
                 outputs = { 'X_global': all_X_globals, 'video_file': all_video_files,'abnormal_ped_pred':  all_abnormal_ped_pred,
                             'abnormal_ped_input':  all_abnormal_ped_input, 'abnormal_gt_frame':all_abnormal_gt_frame,
                             'id_x':all_id_x, 'id_y': all_id_y , 'frame_x':all_frame_x, 'frame_y':all_frame_y,
                             'pred_trajs': all_pred_trajs, 'gt_trajs':all_gt_trajs,'distributions':distribution}
+
+            elif custom == 'pose':  
+                outputs = { 'X_global': all_X_globals, 'video_file': all_video_files,'abnormal_ped_pred':  all_abnormal_ped_pred,
+                            'kp_confidence_pred': all_kp_confidence_pred,
+                            'abnormal_ped_input':  all_abnormal_ped_input, 'abnormal_gt_frame':all_abnormal_gt_frame,
+                            'id_x':all_id_x, 'id_y': all_id_y , 'frame_x':all_frame_x, 'frame_y':all_frame_y,
+                            'pred_trajs': all_pred_trajs, 'gt_trajs':all_gt_trajs,'distributions':distribution}
+                
+            # elif custom == 'pose':
+            #     outputs = { 'X_global': all_X_globals, 'vid_name': all_video_files,
+            #                 'id_x':all_id_x, 'id_y': all_id_y , 'frame_x':all_frame_x, 'frame_y':all_frame_y,
+            #                 'pred_trajs': all_pred_trajs, 'gt_trajs':all_gt_trajs,'distributions':distribution}
+                
             else:
                 outputs = {'X_global': all_X_globals, 'timestep': all_timesteps,
                             'pred_trajs': all_pred_trajs, 'gt_trajs':all_gt_trajs,'distributions':distribution}
@@ -266,11 +343,29 @@ def inference(cfg, epoch, model, dataloader, device, logger=None, eval_kde_nll=F
                 os.makedirs(cfg.OUT_DIR)
             
             # Need to uncomment this to be able to work
-            if custom:
-                # output_file = os.path.join(cfg.OUT_DIR, '{}_{}_in_{}_out_{}_K_{}_skip_{}.pkl'.format(cfg.MODEL.LATENT_DIST, cfg.DATASET.NAME_SECOND, cfg.MODEL.INPUT_LEN,
-                #                                                                         cfg.MODEL.PRED_LEN, cfg.MODEL.K, cfg.MODEL.INPUT_LEN))
+            if custom=='bbox':
                 output_file = os.path.join(cfg.OUT_DIR, '{}_{}_in_{}_out_{}_K_{}.pkl'.format(cfg.MODEL.LATENT_DIST, cfg.DATASET.NAME_SECOND, cfg.MODEL.INPUT_LEN,
                                                                                         cfg.MODEL.PRED_LEN, cfg.MODEL.K))
+            elif custom=='pose':
+                if not cfg.DATASET.ENDPOINT and not cfg.DATASET.BONE and not cfg.DATASET.JOINT:
+                    end = 'hc_no_bone_endpoint_joint'
+                elif cfg.DATASET.ENDPOINT and cfg.DATASET.BONE and cfg.DATASET.JOINT:
+                    end = 'hc_all'
+                elif cfg.DATASET.JOINT and cfg.DATASET.ENDPOINT:
+                    end ='hc_endpoint_joint'
+                elif cfg.DATASET.JOINT and cfg.DATASET.BONE:
+                    end = 'hc_bone_joint'
+                elif cfg.DATASET.BONE  and cfg.DATASET.ENDPOINT:
+                    end = 'hc_bone_endpoint'
+                elif cfg.DATASET.BONE:
+                    end = 'hc_bone'
+                elif cfg.DATASET.ENDPOINT:
+                    end = 'hc_endpoint_1'
+                elif cfg.DATASET.JOINT:
+                    end = 'hc_joint'
+
+                output_file = os.path.join(cfg.OUT_DIR, '{}_{}_in_{}_out_{}_K_{}_pose_{}.pkl'.format(cfg.MODEL.LATENT_DIST, cfg.DATASET.NAME_SECOND, cfg.MODEL.INPUT_LEN,
+                                                                                        cfg.MODEL.PRED_LEN, cfg.MODEL.K, end))
             else:
                 output_file = os.path.join(cfg.OUT_DIR, '{}_{}.pkl'.format(cfg.MODEL.LATENT_DIST, cfg.DATASET.NAME))
 

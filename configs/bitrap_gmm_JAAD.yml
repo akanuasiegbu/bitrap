@@ -45,4 +45,4 @@ SOLVER:
   scheduler: 'exp'
 TEST:
   BATCH_SIZE: 1024
-  KDE_BATCH_SIZE: 24
+  KDE_BATCH_SIZE: 2

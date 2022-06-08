@@ -15,10 +15,10 @@ hyparams = {
     'epochs':350,
     'batch_size': 32,
     'buffer_size': 10000,
- 
+    
     'frames': 20,
-    'input_seq': 25,
-    'pred_seq': 25,
+    'input_seq': 13,
+    'pred_seq': 13,
 
     'to_xywh':True, # This is assuming file is in tlbr format
     # 'max':913.0, # wonder better way to pick
@@ -98,6 +98,8 @@ loc =  {
                 'test_file': "/mnt/roahm/users/akanu/projects/anomalous_pred/output_deepsort/avenue/test_txt/",
                 'train_vid': '/mnt/roahm/users/akanu/dataset/Anomaly/Avenue_Dataset/training_videos',
                 'test_vid': '/mnt/roahm/users/akanu/dataset/Anomaly/Avenue_Dataset/testing_videos',
+                'train_poses': '/mnt/roahm/users/akanu/projects/AlphaPose/avenue_alphapose_out/train/{}/alphapose-results.json',
+                'test_poses': '/mnt/roahm/users/akanu/projects/anomalous_pred/output_pose_json_appended/{:02d}_append.json',
                 },
 
             #Need to rerun ped1
@@ -110,6 +112,8 @@ loc =  {
                 "test_file": "/mnt/roahm/users/akanu/projects/anomalous_pred/output_deepsort/st/test_txt/",
                 'train_vid': '/mnt/workspace/datasets/shanghaitech/training/videos',
                 'test_vid':  '/mnt/roahm/users/akanu/projects/Deep-SORT-YOLOv4/tensorflow2.0/deep-sort-yolov4/input_video/st_test',
+                'train_poses': '/mnt/roahm/users/akanu/projects/AlphaPose/st_alphapose_out/train/{:02d}_{:03d}.avi/alphapose-results.json',
+                'test_poses': '/mnt/roahm/users/akanu/projects/anomalous_pred/output_pose_json_appended_st/{:02d}_{:04d}_append.json',
                 },
             'hr-st':{
                 'train_file':"/mnt/roahm/users/akanu/projects/anomalous_pred/output_deepsort/HR-ShanghaiTech/train_txt/",

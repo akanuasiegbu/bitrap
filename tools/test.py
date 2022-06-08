@@ -47,7 +47,9 @@ def main(cfg):
     # test_dataloader = make_dataloader(cfg, 'test')
     # test_dataloader_av = make_dataloader_custom_data(cfg, 'test')
 
-    test_dataloader = make_dataloader_custom_data(cfg =cfg, split ='test', dataset =cfg.DATASET.NAME_SECOND)
+    # test_dataloader = make_dataloader_custom_data(cfg =cfg, split ='test', dataset =cfg.DATASET.NAME_SECOND)
+    test_dataloader = make_dataloader_custom_data(cfg =cfg, load_poses = True, split='test', dataset =cfg.DATASET.NAME_SECOND)
+
     # # print(test_dataloader.xx[:5])
     # i = 0
     # for data, data_av in zip(test_dataloader, test_dataloader_av):
@@ -65,7 +67,7 @@ def main(cfg):
     
     # inference(cfg, 0, model, test_dataloader, cfg.DEVICE, logger=logger, eval_kde_nll=True, test_mode=True)
 
-    inference(cfg, 0, model, test_dataloader, cfg.DEVICE, logger=logger, eval_kde_nll=True, test_mode=True, custom=True)
+    inference(cfg, 0, model, test_dataloader, cfg.DEVICE, logger=logger, eval_kde_nll=True, test_mode=True, custom='pose')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="PyTorch Object Detection Training")

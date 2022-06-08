@@ -1,6 +1,6 @@
-PROJECT: 'avenue_np_jaad_unimodal_pose'
-CKPT_DIR: 'checkpoints/JAAD_checkpoints/goal_cvae_checkpoints/wandb_unimodal_pose'
-OUT_DIR: 'outputs/JAAD_outputs/goal_cvae_outputs/unimodal_avenue_pose'
+PROJECT: 'avenue_np_jaad_unimodal_pose_human_constraint'
+CKPT_DIR: 'checkpoints/JAAD_checkpoints/goal_cvae_checkpoints/wandb_unimodal_pose_human_constraint'
+OUT_DIR: 'outputs/JAAD_outputs/goal_cvae_outputs/unimodal_avenue_pose_human_constraint'
 DEVICE: 'cuda'
 METHOD: 'BiTraPNP'
 VISUALIZE: False #added/changed
@@ -13,11 +13,11 @@ MODEL:
   LATENT_DIM: 32 
 
   # PRED_LEN: 45   # input and pred_len is defined in 30FPS
-  INPUT_LEN: 3
-  PRED_LEN: 3      # input and pred_len is defined in 30FPS
+  INPUT_LEN: 25
+  PRED_LEN: 25 # input and pred_len is defined in 30FPS
   GLOBAL_EMBED_SIZE:   256
   GLOBAL_HIDDEN_SIZE:  256
-  GLOBAL_INPUT_DIM: 38 # Note this was 38 for when pose +bbox
+  GLOBAL_INPUT_DIM: 36 # Note this was 38 for when pose +bbox
   DROPOUT: 0.0
 
   WITH_FLOW: False
@@ -28,7 +28,9 @@ MODEL:
   ENC_HIDDEN_SIZE: 256
   DEC_INPUT_SIZE: 256
   DEC_HIDDEN_SIZE: 256
-  DEC_OUTPUT_DIM: 38
+  DEC_OUTPUT_DIM: 36
+  USE_HUMAN_CONSTRAINT: True
+
 DATASET:
   NAME: 'JAAD'
   NAME_SECOND: 'avenue'
@@ -41,18 +43,22 @@ DATASET:
 #  TRAJECTORY_PATH:  '/home/akanu/temp_storage_data/JAAD/trajectories/'
   BBOX_TYPE: 'cxcywh' # bbox is in cxcywh format
   NORMALIZE: 'zero-one' 
-  MIN_BBOX: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0 ] # the min of cxcywh or x1x2y1y2
+  MIN_BBOX: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0] # the min of cxcywh or x1x2y1y2
   # MAX_BBOX: [1920, 1080, 1920, 1080] # the max of cxcywh or x1x2y1y2
   MAX_BBOX: [640, 360, 640, 360,  640, 360, 640, 360,  640, 360, 640, 360,  640, 360, 640, 360, 
             640, 360, 640, 360,  640, 360, 640, 360,   640, 360, 640, 360,  640, 360, 640, 360, 
-            640, 360, 640, 360,   640, 360] # the max of cxcywh or x1x2y1y2 for avenue
+            640, 360, 640, 360] # the max of cxcywh or x1x2y1y2 for avenue
+  BONE: False
+  ENDPOINT: False
+  JOINT: False
+  SCALE_END_FACTOR: 1
 DATALOADER:
   NUM_WORKERS: 24
 SOLVER:
-  MAX_EPOCH: 250
+  MAX_EPOCH: 500
   BATCH_SIZE: 128
   LR: 0.001
   scheduler: 'plateau'
 TEST:
   # BATCH_SIZE: 1024
-  BATCH_SIZE: 30
+  BATCH_SIZE: 128

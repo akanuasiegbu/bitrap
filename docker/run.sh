@@ -15,7 +15,7 @@ docker run -it \
   -v /mnt/roahm:/mnt/roahm \
   -v /mnt/workspace/datasets:/mnt/workspace/datasets:ro \
   -w /home/akanu \
-  --ipc host\
+  --ipc "host"\
   -v $HOME/akanu/projects/bidireaction-trajectory-prediction:/home/akanu \
   bitrap:latest
 

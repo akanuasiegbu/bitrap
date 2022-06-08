@@ -334,3 +334,24 @@ def norm_train_max_min(data, max1, min1, undo_norm=False):
         xx = (data['x_ppl_box'] - min1)/(max1 - min1)
         yy = (data['y_ppl_box'] - min1)/(max1 - min1)
         return xx,yy
+
+
+if __name__ == '__main__':
+
+    from config_for_my_data import hyparams, loc, exp
+    train_file =  loc['data_load']['avenue']['train_file']
+    test_file =  loc['data_load']['avenue']['test_file']
+
+    location = Files_Load(train_file,test_file)
+
+    traindict = Boxes(  loc_files = location['files_train'], 
+                        txt_names = location['txt_train'],
+                        input_seq = hyparams['input_seq'],
+                        pred_seq = hyparams['pred_seq'],
+                        data_consecutive = exp['data_consecutive'], 
+                        pad = 'pre', 
+                        to_xywh = hyparams['to_xywh'],
+                        testing = False
+                        )
+    
+    print('done')

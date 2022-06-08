@@ -16,92 +16,92 @@ from .latent_net import CategoricalLatent, kl_q_p
 from .gmm2d import GMM2D
 from .gmm4d import GMM4D
 from .dynamics.integrator import SingleIntegrator
-from bitrap.layers.loss import cvae_loss, mutual_inf_mc
+from bitrap.layers.loss import cvae_loss, mutual_inf_mc, human_constraint_loss
 
 class BiTraPNP(nn.Module):
     def __init__(self, cfg, dataset_name=None):
         super(BiTraPNP, self).__init__()
         self.cfg = copy.deepcopy(cfg)
-        self.K = self.cfg.K 
+        self.K = self.cfg.MODEL.K 
         self.param_scheduler = None
         # encoder
-        self.box_embed = nn.Sequential(nn.Linear(self.cfg.GLOBAL_INPUT_DIM, self.cfg.INPUT_EMBED_SIZE), 
+        self.box_embed = nn.Sequential(nn.Linear(self.cfg.MODEL.GLOBAL_INPUT_DIM, self.cfg.MODEL.INPUT_EMBED_SIZE), 
                                         nn.ReLU()) 
-        self.box_encoder = nn.GRU(input_size=self.cfg.INPUT_EMBED_SIZE,
-                                hidden_size=self.cfg.ENC_HIDDEN_SIZE,
+        self.box_encoder = nn.GRU(input_size=self.cfg.MODEL.INPUT_EMBED_SIZE,
+                                hidden_size=self.cfg.MODEL.ENC_HIDDEN_SIZE,
                                 batch_first=True)
 
         #encoder for future trajectory
-        # self.gt_goal_encoder = nn.Sequential(nn.Linear(self.cfg.DEC_OUTPUT_DIM, 16),
+        # self.gt_goal_encoder = nn.Sequential(nn.Linear(self.cfg.MODEL.DEC_OUTPUT_DIM, 16),
         #                                         nn.ReLU(),
         #                                         nn.Linear(16, 32),
         #                                         nn.ReLU(),
-        #                                         nn.Linear(32, self.cfg.GOAL_HIDDEN_SIZE),
+        #                                         nn.Linear(32, self.cfg.MODEL.GOAL_HIDDEN_SIZE),
         #                                         nn.ReLU())
-        self.node_future_encoder_h = nn.Linear(self.cfg.GLOBAL_INPUT_DIM, 32)
-        self.gt_goal_encoder = nn.GRU(input_size=self.cfg.DEC_OUTPUT_DIM,
+        self.node_future_encoder_h = nn.Linear(self.cfg.MODEL.GLOBAL_INPUT_DIM, 32)
+        self.gt_goal_encoder = nn.GRU(input_size=self.cfg.MODEL.DEC_OUTPUT_DIM,
                                         hidden_size=32,
                                         bidirectional=True,
                                         batch_first=True)
         
             
-        self.hidden_size = self.cfg.ENC_HIDDEN_SIZE        
+        self.hidden_size = self.cfg.MODEL.ENC_HIDDEN_SIZE        
         self.p_z_x = nn.Sequential(nn.Linear(self.hidden_size,  
                                             128),
                                     nn.ReLU(),
                                     nn.Linear(128, 64),
                                     nn.ReLU(),
-                                    nn.Linear(64, self.cfg.LATENT_DIM*2))
+                                    nn.Linear(64, self.cfg.MODEL.LATENT_DIM*2))
         # posterior
-        self.q_z_xy = nn.Sequential(nn.Linear(self.hidden_size + self.cfg.GOAL_HIDDEN_SIZE,
+        self.q_z_xy = nn.Sequential(nn.Linear(self.hidden_size + self.cfg.MODEL.GOAL_HIDDEN_SIZE,
                                             128),
                                     nn.ReLU(),
                                     nn.Linear(128, 64),
                                     nn.ReLU(),
-                                    nn.Linear(64, self.cfg.LATENT_DIM*2))
+                                    nn.Linear(64, self.cfg.MODEL.LATENT_DIM*2))
 
         # goal predictor
-        self.goal_decoder = nn.Sequential(nn.Linear(self.hidden_size + self.cfg.LATENT_DIM,
+        self.goal_decoder = nn.Sequential(nn.Linear(self.hidden_size + self.cfg.MODEL.LATENT_DIM,
                                                     128),
                                             nn.ReLU(),
                                             nn.Linear(128, 64),
                                             nn.ReLU(),
-                                            nn.Linear(64, self.cfg.DEC_OUTPUT_DIM))
+                                            nn.Linear(64, self.cfg.MODEL.DEC_OUTPUT_DIM))
         #  add bidirectional predictor
-        self.dec_init_hidden_size = self.hidden_size + self.cfg.LATENT_DIM if self.cfg.DEC_WITH_Z else self.hidden_size
+        self.dec_init_hidden_size = self.hidden_size + self.cfg.MODEL.LATENT_DIM if self.cfg.MODEL.DEC_WITH_Z else self.hidden_size
 
         self.enc_h_to_forward_h = nn.Sequential(nn.Linear( self.dec_init_hidden_size, 
-                                                      self.cfg.DEC_HIDDEN_SIZE),
+                                                      self.cfg.MODEL.DEC_HIDDEN_SIZE),
                                                 nn.ReLU(),
                                                 )
-        self.traj_dec_input_forward = nn.Sequential(nn.Linear(self.cfg.DEC_HIDDEN_SIZE, 
-                                                              self.cfg.DEC_INPUT_SIZE),
+        self.traj_dec_input_forward = nn.Sequential(nn.Linear(self.cfg.MODEL.DEC_HIDDEN_SIZE, 
+                                                              self.cfg.MODEL.DEC_INPUT_SIZE),
                                                     nn.ReLU(),
                                                     )
-        self.traj_dec_forward = nn.GRUCell(input_size=self.cfg.DEC_INPUT_SIZE,
-                                            hidden_size=self.cfg.DEC_HIDDEN_SIZE) 
+        self.traj_dec_forward = nn.GRUCell(input_size=self.cfg.MODEL.DEC_INPUT_SIZE,
+                                            hidden_size=self.cfg.MODEL.DEC_HIDDEN_SIZE) 
         
         self.enc_h_to_back_h = nn.Sequential(nn.Linear( self.dec_init_hidden_size,
-                                                      self.cfg.DEC_HIDDEN_SIZE),
+                                                      self.cfg.MODEL.DEC_HIDDEN_SIZE),
                                             nn.ReLU(),
                                             )
         
-        self.traj_dec_input_backward = nn.Sequential(nn.Linear(self.cfg.DEC_OUTPUT_DIM, # 2 or 4 
-                                                                self.cfg.DEC_INPUT_SIZE),
+        self.traj_dec_input_backward = nn.Sequential(nn.Linear(self.cfg.MODEL.DEC_OUTPUT_DIM, # 2 or 4 
+                                                                self.cfg.MODEL.DEC_INPUT_SIZE),
                                                         nn.ReLU(),
                                                         )
-        self.traj_dec_backward = nn.GRUCell(input_size=self.cfg.DEC_INPUT_SIZE,
-                                            hidden_size=self.cfg.DEC_HIDDEN_SIZE)
+        self.traj_dec_backward = nn.GRUCell(input_size=self.cfg.MODEL.DEC_INPUT_SIZE,
+                                            hidden_size=self.cfg.MODEL.DEC_HIDDEN_SIZE)
 
-        self.traj_output = nn.Linear(self.cfg.DEC_HIDDEN_SIZE * 2, # merged forward and backward 
-                                     self.cfg.DEC_OUTPUT_DIM)
+        self.traj_output = nn.Linear(self.cfg.MODEL.DEC_HIDDEN_SIZE * 2, # merged forward and backward 
+                                     self.cfg.MODEL.DEC_OUTPUT_DIM)
 
     def gaussian_latent_net(self, enc_h, cur_state, target=None, z_mode=None):
         # get mu, sigma
         # 1. sample z from piror
         z_mu_logvar_p = self.p_z_x(enc_h)
-        z_mu_p = z_mu_logvar_p[:, :self.cfg.LATENT_DIM]
-        z_logvar_p = z_mu_logvar_p[:, self.cfg.LATENT_DIM:]
+        z_mu_p = z_mu_logvar_p[:, :self.cfg.MODEL.LATENT_DIM]
+        z_logvar_p = z_mu_logvar_p[:, self.cfg.MODEL.LATENT_DIM:]
         if target is not None:
             # 2. sample z from posterior, for training only
             initial_h = self.node_future_encoder_h(cur_state)
@@ -115,8 +115,8 @@ class BiTraPNP(nn.Module):
                                 training=self.training)
 
             z_mu_logvar_q = self.q_z_xy(torch.cat([enc_h, target_h], dim=-1))
-            z_mu_q = z_mu_logvar_q[:, :self.cfg.LATENT_DIM]
-            z_logvar_q = z_mu_logvar_q[:, self.cfg.LATENT_DIM:]
+            z_mu_q = z_mu_logvar_q[:, :self.cfg.MODEL.LATENT_DIM]
+            z_logvar_q = z_mu_logvar_q[:, self.cfg.MODEL.LATENT_DIM:]
             Z_mu = z_mu_q
             Z_logvar = z_logvar_q
 
@@ -133,7 +133,7 @@ class BiTraPNP(nn.Module):
             KLD = 0.0
         
         # 4. Draw sample
-        K_samples = torch.randn(enc_h.shape[0], self.K, self.cfg.LATENT_DIM).cuda()
+        K_samples = torch.randn(enc_h.shape[0], self.K, self.cfg.MODEL.LATENT_DIM).cuda()
         Z_std = torch.exp(0.5 * Z_logvar)
         Z = Z_mu.unsqueeze(1).repeat(1, self.K, 1) + K_samples * Z_std.unsqueeze(1).repeat(1, self.K, 1)
 
@@ -181,7 +181,7 @@ class BiTraPNP(nn.Module):
         outputs, _ = self.encode_variable_length_seqs(x,
                                                       lower_indices=first_history_indices)
         outputs = F.dropout(outputs,
-                            p=self.cfg.DROPOUT,
+                            p=self.cfg.MODEL.DROPOUT,
                             training=self.training)
         if first_history_indices is not None:
             last_index_per_sequence = -(first_history_indices + 1)
@@ -215,7 +215,7 @@ class BiTraPNP(nn.Module):
         enc_h_and_z = torch.cat([h_x.unsqueeze(1).repeat(1, Z.shape[1], 1), Z], dim=-1)
         pred_goal = self.goal_decoder(enc_h_and_z)
         
-        dec_h = enc_h_and_z if self.cfg.DEC_WITH_Z else h_x
+        dec_h = enc_h_and_z if self.cfg.MODEL.DEC_WITH_Z else h_x
         pred_traj = self.pred_future_traj(dec_h, pred_goal)
         cur_pos = input_x[:, None, -1, :] if cur_pos is None else cur_pos.unsqueeze(1)
         pred_goal = pred_goal + cur_pos
@@ -226,9 +226,14 @@ class BiTraPNP(nn.Module):
             loss_goal, loss_traj = cvae_loss(pred_goal, 
                                             pred_traj, 
                                             target_y, 
-                                            best_of_many=self.cfg.BEST_OF_MANY
+                                            best_of_many=self.cfg.MODEL.BEST_OF_MANY
                                             ) 
-            loss_dict =  {'loss_goal':loss_goal, 'loss_traj':loss_traj, 'loss_kld':KLD}
+
+            if self.cfg.MODEL.USE_HUMAN_CONSTRAINT:
+                joint_loss, bone_loss, endpoint_loss = human_constraint_loss( pred_traj, target_y, self.cfg)
+                loss_dict =  {'loss_goal':loss_goal, 'loss_traj':loss_traj, 'loss_kld':KLD, 'loss_joint':joint_loss, 'loss_bone':bone_loss, 'loss_endpoint': endpoint_loss}
+            else:
+                loss_dict =  {'loss_goal':loss_goal, 'loss_traj':loss_traj, 'loss_kld':KLD}
         else:
             # test
             loss_dict = {}
@@ -244,7 +249,7 @@ class BiTraPNP(nn.Module):
         Returns:
             backward_outputs: (Batch, T, K, pred_dim)
         '''
-        pred_len = self.cfg.PRED_LEN
+        pred_len = self.cfg.MODEL.PRED_LEN
 
         K = G.shape[1]
         # 1. run forward

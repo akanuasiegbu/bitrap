@@ -1,4 +1,5 @@
 import os
+from pickle import NONE
 
 from yacs.config import CfgNode as CN
 
@@ -27,6 +28,7 @@ _C.MODEL.LOCAL_INPUT_DIM = 50
 _C.MODEL.DEC_OUTPUT_DIM = 4
 _C.MODEL.DEC_INPUT_SIZE = 512 # the actual input size to the decoder GRU, it's the concatenation of all separate inputs
 _C.MODEL.dt = 0.4
+_C.MODEL.USE_HUMAN_CONSTRAINT = False
 
 # ----- FOL -----
 _C.MODEL.WITH_FLOW = False # whether use flow in the model
@@ -63,6 +65,12 @@ _C.DATASET.NORMALIZE = 'zero-one' # normalize to 0-1
 _C.DATASET.MIN_BBOX = [0,0,0,0] # the min of cxcywh or x1x2y1y2
 _C.DATASET.MAX_BBOX = [1920, 1080, 1920, 1080] # the max of cxcywh or x1x2y1y2
 _C.DATASET.AUGMENT = True
+_C.DATASET.ST_VID_DIR_TRAIN = 'None'
+_C.DATASET.ST_VID_DIR_TEST = 'None'
+_C.DATASET.BONE = False
+_C.DATASET.JOINT = False
+_C.DATASET.ENDPOINT = False
+_C.DATASET.SCALE_END_FACTOR = 1
 # ---- DATALOADER -----
 _C.DATALOADER = CN()
 _C.DATALOADER.NUM_WORKERS = 4

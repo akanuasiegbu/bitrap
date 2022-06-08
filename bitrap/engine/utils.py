@@ -85,7 +85,7 @@ def post_process(cfg, X_global, y_global, pred_traj, pred_goal=None, dist_traj=N
     if hasattr(dist_goal, 'mus'):
         dist_goal.to('cpu')
         dist_goal.squeeze(1)
-    if dim == 4:
+    if dim == 4 or dim == 38 or dim==36:
         # BBOX: denormalize and change the mode
         _min = np.array(cfg.DATASET.MIN_BBOX)[None, None, :] # B, T, dim
         _max = np.array(cfg.DATASET.MAX_BBOX)[None, None, :]
@@ -105,6 +105,52 @@ def post_process(cfg, X_global, y_global, pred_traj, pred_goal=None, dist_traj=N
             pass
         else:
             raise ValueError()
+
+        if cfg.MODEL.USE_HUMAN_CONSTRAINT:
+            kpoint = {1: [0,1], 2:[2,3], 3:[4,5], 4:[6,7], 5:[8,9], 6:[10,11], 7:[12,13], 8:[14,15],
+                    9:[16,17], 10:[18,19], 11:[20,21], 12:[22,23], 13:[24,25], 14:[26,27], 15:[28,29],
+                    16:[30,31], 17:[32,33], 18:[34,35] } # cant put dict in yml
+            pairs = [(18,1), (1,2), (1,3), (2,4), (3,5), #head
+                    (18,6), (18,7), (6,8), (7,9), (8,10), (9,11), #shouler,elbow, wrist
+                    (18,12), (18,13), (12,14), (13,15), (14,16),  (15,17) ] #legs
+                    
+
+            temp_pred_traj = {}
+            temp_y_global = {}
+            temp_x_global = {}
+            temp_pred_goal = {}
+            temp_pred_traj[18] = pred_traj[:,:,:,kpoint[18][0]:kpoint[18][1]+1]
+            temp_y_global[18] = y_global[:,:,kpoint[18][0]:kpoint[18][1]+1]
+            temp_x_global[18] = X_global[:,:,kpoint[18][0]:kpoint[18][1]+1]
+            temp_pred_goal[18] = pred_goal[:,:,kpoint[18][0]:kpoint[18][1]+1]
+
+            for pair in pairs:
+                end = pair[1]
+                start = pair[0]
+                temp_pred_traj[end] = pred_traj[:,:,:,kpoint[end][0]:kpoint[end][1]+1] + temp_pred_traj[start]
+                temp_y_global[end] = y_global[:,:,kpoint[end][0]:kpoint[end][1]+1] + temp_y_global[start]
+                temp_x_global[end] = X_global[:,:,kpoint[end][0]:kpoint[end][1]+1] + temp_x_global[start]
+                temp_pred_goal[end] = pred_goal[:,:,kpoint[end][0]:kpoint[end][1]+1] + temp_pred_goal[start]
+
+            indices = np.arange(2,19)
+
+            data_pred_traj = temp_pred_traj[1]
+            data_y_global = temp_y_global[1]
+            data_x_global = temp_x_global[1]
+            data_pred_goal = temp_pred_goal[1]
+
+            for index in indices:
+                data_pred_traj = np.concatenate((data_pred_traj, temp_pred_traj[index]), axis=3)
+                data_y_global = np.concatenate((data_y_global, temp_y_global[index]), axis=2)
+                data_x_global = np.concatenate((data_x_global, temp_x_global[index]), axis=2)
+                data_pred_goal = np.concatenate((data_pred_goal, temp_pred_goal[index]), axis=2)
+
+
+            pred_traj = data_pred_traj
+            y_global = data_y_global
+            X_global = data_x_global
+            pred_goal = data_pred_goal
+
 
         # NOTE: June 19, convert distribution from cxcywh to image resolution x1y1x2y2
         if hasattr(dist_traj, 'mus') and cfg.DATASET.NORMALIZE != 'none':

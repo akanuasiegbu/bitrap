@@ -7,5 +7,9 @@
 
 
 # avenue
-python tools/test.py --config_file configs/avenue.yml CKPT_DIR /home/akanu/checkpoints/JAAD_checkpoints/goal_cvae_checkpoints/wandb_unimodal/avenue_input_25_output_25.pth
+# python tools/test.py --config_file configs/avenue.yml CKPT_DIR /home/akanu/checkpoints/JAAD_checkpoints/goal_cvae_checkpoints/wandb_unimodal/avenue_input_25_output_25.pth
 
+# python tools/test.py --config_file configs/avenue_pose.yml CKPT_DIR /home/akanu/checkpoints/JAAD_checkpoints/goal_cvae_checkpoints/wandb_unimodal_pose/gua_in_13_out_13_k_1.pth
+
+
+python tools/test.py --config_file configs/avenue_pose_human_constraint.yml CKPT_DIR /home/akanu/checkpoints/JAAD_checkpoints/goal_cvae_checkpoints/wandb_unimodal_pose_human_constraint/gua_in_25_out_25_k_1_hc_no_bone_endpoint_joint.pkl

@@ -79,19 +79,11 @@ def main():
     # train_dataloader = make_dataloader(cfg, 'train')
     # val_dataloader = make_dataloader(cfg, 'val')
     # test_dataloader = make_dataloader(cfg, 'test')
+    print('endpoint: {}, bone: {}, joint: {}'.format(cfg.DATASET.ENDPOINT, cfg.DATASET.BONE, cfg.DATASET.JOINT))
+    train_dataloader = make_dataloader_custom_data(cfg = cfg, load_poses = True, split='train', dataset =cfg.DATASET.NAME_SECOND)
+    val_dataloader = make_dataloader_custom_data(cfg = cfg, load_poses = True, split='val', dataset =cfg.DATASET.NAME_SECOND)
+    test_dataloader = make_dataloader_custom_data(cfg =cfg, load_poses = True, split='test', dataset =cfg.DATASET.NAME_SECOND)
 
-    train_dataloader = make_dataloader_custom_data(cfg = cfg,split='train', dataset =cfg.DATASET.NAME_SECOND)
-    val_dataloader = make_dataloader_custom_data(cfg = cfg, split='val', dataset =cfg.DATASET.NAME_SECOND)
-    test_dataloader = make_dataloader_custom_data(cfg =cfg, split='test', dataset =cfg.DATASET.NAME_SECOND)
-
-
-    # i = 0
-    # for trains, vals,tests, tests_norm in zip(train_dataloader, val_dataloader, test_dataloader, test_dataloader_norm):
-    #     print(trains)
-    #     i +=1
-    #     if i == 1:
-    #         break
-    # quit()
 
 
     print('Dataloader built!')
@@ -150,7 +142,7 @@ def main():
         val_loss = do_val(cfg, epoch, model, val_dataloader, cfg.DEVICE, logger=logger)
         if (epoch+1) % 1 == 0:
             # inference(cfg, epoch, model, test_dataloader, cfg.DEVICE, logger=logger, eval_kde_nll=False)
-            inference(cfg, epoch, model, test_dataloader, cfg.DEVICE, logger=logger, eval_kde_nll=False, test_mode=False, custom=True)
+            inference(cfg, epoch, model, test_dataloader, cfg.DEVICE, logger=logger, eval_kde_nll=False, test_mode=False, custom='pose')
 
 
         torch.save(model.state_dict(), os.path.join(save_checkpoint_dir, 'Epoch_{}.pth'.format(str(epoch).zfill(3))))
