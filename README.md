@@ -37,15 +37,15 @@ To train/inferece on CPU or GPU, simply add `DEVICE='cpu'` or  `DEVICE='cuda'`. 
 ## Inference 
 
 
-### Bounding box trajectory prediction on JAAD and PIE
+### Bounding box trajectory prediction on Avenue and Shanghai Tech
 We predict the bounding box coordinate trajectory for first-person (ego-centric) view JAAD and PIE datasets.
 Test on Avenue dataset:
 ```
-python tools/test.py --config_file configs/avenue_pose.yml CKPT_DIR **DIR_TO_CKPT**
+python tools/test.py --config_file configs/avenue_pose_hc.yml CKPT_DIR **DIR_TO_CKPT**
 
 ```
 
-Test on JAAD dataset:
+Test on Shanghai Tech dataset:
 ```
 python tools/test.py --config_file configs/st_pose_hc.yml CKPT_DIR **DIR_TO_CKPT**
 ```
