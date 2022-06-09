@@ -2,6 +2,7 @@
 Yu Yao, Ella Atkins, Matthew Johnson-Roberson, Ram Vasudevan and Xiaoxiao Du
 
 Repo contains the code for BiTrap adjusted for Pose predictions:
+
 [BiPOCO: Bi-directional Trajectory Prediction with Pose Constraints for
 Pedestrian Anomaly Detection]()
 
