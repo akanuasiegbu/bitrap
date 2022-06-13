@@ -1,4 +1,4 @@
-Repo contains the code for BiTrap adjusted for Pose predictionss:
+Repo contains the code for BiTrap adjusted for Pose predictions:
 
 [BiPOCO: Bi-directional Trajectory Prediction with Pose Constraints for
 Pedestrian Anomaly Detection]()
