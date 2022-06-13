@@ -21,6 +21,14 @@ Run following command to add bitrap path to the PYTHONPATH
   export PYTHONPATH=$PWD:PYTHONPATH
 
 One can also use docker with `docker/Dockerfile`. 
+# Pose Data Input into BiTRAP
+The inputted data into BiTrap for Poses can be found in this folder.
+Next download the json files and put them in a folder. Then in config_for_my_data.py set loc[‘data_load’][‘avenue’][‘train_poses’].  Loc[‘data_load’][‘avenue’][‘tet_poses’],  loc[‘data_load’][st][‘train_poses’], and  loc[‘data_load’][st][‘test_poses’] to the correct directory.
+To recreate the input data
+Run AlphaPose (commit number xxx)
+Put how you run AlphaPose details here
+Next with json files from AlphaPose we need to add the anomaly labels with the add_to_json_file.py.
+
 
 ## Training
 Users can train the BiTraP models on Avenue and ShanghaiTech dataset easily by runing the following command:
