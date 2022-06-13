@@ -22,7 +22,7 @@ Run following command to add bitrap path to the PYTHONPATH
 
 One can also use docker with `docker/Dockerfile`. 
 # Pose Data Input into BiTRAP
-* The inputted data into BiTrap for train and test poses can be found in this [folder]().
+* The inputted data into BiTrap for train and test poses can be found in this [folder](https://drive.google.com/drive/folders/1oNKUXdYlNP1g7M9T3E1UWERh0lFobKAl?usp=sharing).
   * Next download the json files and put them in a folder. Then in config_for_my_data.py set ```loc['data_load']['avenue']['train_poses']```.   ```loc['data_load']['avenue']['test_poses']```,  ```loc['data_load']['st']['train_poses']```, and  ```loc['data_load']['st']['test_poses']``` to the correct directory.
 * To recreate the pose input data
   * Run [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose/tree/ddaf4b99327132f7617a768a75f7cb94870ed57c) (commit number ddaf4b9)
@@ -32,8 +32,12 @@ One can also use docker with `docker/Dockerfile`.
   * Next with json files from AlphaPose add the anomaly labels with the ```add_to_json_file.py``` for only the testing data
 
 # Pretrained Models
-Pretrained models for Avenue and ShanghaiTech can found [here]()
+Pretrained models for [Avenue](https://drive.google.com/drive/folders/1ra1XTB8KpBOy7Xgxg8of3DwjoIJyd9bV?usp=sharing) and [ShanghaiTech](https://drive.google.com/drive/folders/1-vY3MWPaWbwwgWOiOcD-sXXzqHidXYJv?usp=sharing) can found.
 
+# PKL Files
+Pkl files of the best performing configuration bolded in table [2](https://drive.google.com/drive/folders/1jO3RnkvOsR-VLdATyzeMDsGF7mAu5Qdl?usp=sharing) and [3](https://drive.google.com/drive/folders/1ztgVn6Oq2Poq1PpAMzgL9yj00UToXn8K?usp=sharing) can be found.
+
+Other pkl files can be obtained by using inference commands shown below with the pretrained models.
 
 ## Training
 ##### Pose trajectory training on Avenue and ShanghaiTech Dataset
@@ -57,7 +61,7 @@ Note that you must set the input and output lengths to be the same in YML file u
 
 
 ##### Pose trajectory prediction on Avenue and ShanghaiTech Dataset
-To predict the pose trajectory for first-person (ego-centric) view Avenue and ShanghaiTech datasets use commands below.
+TO obtain the rest of the pkl files for the pose trajectory for first-person (ego-centric) view Avenue and ShanghaiTech datasets use commands below. 
 
 Test on Avenue dataset:
 ```
