@@ -1,1 +1,1 @@
-docker build --network host -t bitrap:latest .
+docker build --network host -t bipoco:latest .

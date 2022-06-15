@@ -1,4 +1,3 @@
-
 if [ -z $1 ] ; then
     GPU=all
 else
@@ -17,7 +16,8 @@ docker run -it \
   -v /mnt/workspace/datasets:/mnt/workspace/datasets:ro \
   -w /home/akanu \
   --ipc "host"\
-  -v $HOME/akanu/projects/Projects_to_make_public/BiPOCO/bitrap:/home/akanu \
-  bipoco:latest
+  -v $HOME/akanu/projects/:/home/akanu \
+  bitrap:latest
 
 
+projects/Projects_to_make_public/BiPOCO/bitrap
