@@ -1,11 +1,7 @@
 import pandas as pd
 import numpy as np
-# from keras.preprocessing.sequence import pad_sequences
 import os
 import pickle
-# from collections import OrderedDict
-# from tensorflow.python.ops import math_ops
-# does change show
 
 def Files_Load(train_file,test_file):
     """

@@ -27,7 +27,7 @@ loc =  {
         'dataset_name': exp['data'], # avenue, st             
         },   
 
-    'data_load':
+    'data_load':{
             'avenue':{
                 'train_file': "/mnt/roahm/users/akanu/projects/anomalous_pred/output_deepsort/avenue/train_txt/", # bbox
                 'test_file': "/mnt/roahm/users/akanu/projects/anomalous_pred/output_deepsort/avenue/test_txt/", #bbox
